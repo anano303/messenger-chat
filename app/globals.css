@@ -1,12 +1,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --chat-primary: #0084ff;
+  --chat-secondary: #f0f2f5;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --chat-primary: #0084ff;
+    --chat-secondary: #1e1e1e;
   }
 }
 
