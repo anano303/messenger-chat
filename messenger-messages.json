@@ -557,5 +557,27 @@
     "text": "მე კი შენ",
     "isAdmin": true,
     "timestamp": 1744582107491
+  },
+  {
+    "id": "msg_1744582443173",
+    "psid": "guest_lx91wqxp",
+    "text": "hi",
+    "isAdmin": false,
+    "timestamp": 1744582443307,
+    "meta": {
+      "guestName": "სსსს",
+      "isGuest": true
+    }
+  },
+  {
+    "id": "msg_1744582454226",
+    "psid": "guest_i8vp7173",
+    "text": "jjjj",
+    "isAdmin": false,
+    "timestamp": 1744582454399,
+    "meta": {
+      "guestName": "ni",
+      "isGuest": true
+    }
   }
 ]

@@ -1,22 +1,50 @@
 import fs from 'fs';
 import path from 'path';
 
+// Let's create a memory store for Vercel environment where file system isn't persistable
+let inMemoryUsers: Record<string, UserData> = {};
+let inMemoryMessages: Message[] = [];
+
+// Check if we're in production environment (like Vercel)
+const isProduction = process.env.NODE_ENV === 'production';
+
 // მარტივი ფაილური ბაზა განვითარებისთვის
 const DB_FILE = path.join(process.cwd(), 'messenger-users.json');
 const MESSAGES_FILE = path.join(process.cwd(), 'messenger-messages.json');
 
 // Make sure the files exist
 function ensureFilesExist() {
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({}), 'utf8');
-  }
-  if (!fs.existsSync(MESSAGES_FILE)) {
-    fs.writeFileSync(MESSAGES_FILE, JSON.stringify([]), 'utf8');
+  if (!isProduction) {
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify({}), 'utf8');
+    }
+    if (!fs.existsSync(MESSAGES_FILE)) {
+      fs.writeFileSync(MESSAGES_FILE, JSON.stringify([]), 'utf8');
+    }
   }
 }
 
 // Call this on startup
 ensureFilesExist();
+
+// Load initial data if in production (will be lost on cold starts, but helps during the session)
+if (isProduction) {
+  try {
+    // Try to load from environment variables if set
+    const usersData = process.env.STORED_USERS_DATA;
+    const messagesData = process.env.STORED_MESSAGES_DATA;
+    
+    if (usersData) {
+      inMemoryUsers = JSON.parse(usersData);
+    }
+    
+    if (messagesData) {
+      inMemoryMessages = JSON.parse(messagesData);
+    }
+  } catch (error) {
+    console.error('Error loading stored data:', error);
+  }
+}
 
 interface UserData {
   psid: string;
@@ -40,6 +68,10 @@ interface Message {
 
 // წავიკითხოთ მომხმარებლების ბაზა
 export async function getUsers(): Promise<Record<string, UserData>> {
+  if (isProduction) {
+    return inMemoryUsers;
+  }
+  
   try {
     ensureFilesExist();
     const data = fs.readFileSync(DB_FILE, 'utf8');
@@ -53,6 +85,17 @@ export async function getUsers(): Promise<Record<string, UserData>> {
 // შევინახოთ მომხმარებლის PSID
 export async function saveUserPSID(psid: string, data: Partial<UserData>): Promise<void> {
   try {
+    if (isProduction) {
+      // In memory storage for production
+      inMemoryUsers[psid] = {
+        ...(inMemoryUsers[psid] || {}),
+        psid,
+        ...data,
+      };
+      return;
+    }
+    
+    // Local file storage for development
     ensureFilesExist();
     const users = await getUsers();
     
@@ -99,6 +142,10 @@ export async function getUserByPSID(psid: string): Promise<UserData | null> {
 
 // წავიკითხოთ ყველა შეტყობინება
 export async function getMessages(): Promise<Message[]> {
+  if (isProduction) {
+    return inMemoryMessages;
+  }
+  
   try {
     ensureFilesExist();
     const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
@@ -112,6 +159,22 @@ export async function getMessages(): Promise<Message[]> {
 // შევინახოთ შეტყობინება და დავაბრუნოთ შენახული შეტყობინება
 export async function saveMessage(message: Message): Promise<Message> {
   try {
+    if (isProduction) {
+      // In memory storage for production
+      inMemoryMessages.push(message);
+      
+      // Update user info
+      await saveUserPSID(message.psid, {
+        lastMessage: message.text,
+        lastActive: new Date().toISOString(),
+        name: message.meta?.guestName || undefined
+      });
+      
+      console.log(`შეტყობინება შენახულია (memory): ${message.isAdmin ? 'ადმინისგან' : 'სტუმრისგან'} ID=${message.psid}${message.meta?.guestName ? ` (${message.meta.guestName})` : ''}`);
+      return message;
+    }
+    
+    // Local file storage for development
     ensureFilesExist();
     const messages = await getMessages();
     
@@ -130,7 +193,7 @@ export async function saveMessage(message: Message): Promise<Message> {
     fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2), 'utf8');
     
     // Debug logging
-    console.log(`შეტყობინება შენახულია: ${message.isAdmin ? 'ადმინისგან' : 'სტუმრისგან'} ID=${message.psid}${message.meta?.guestName ? ` (${message.meta.guestName})` : ''}`);
+    console.log(`შეტყობინება შენახულია (file): ${message.isAdmin ? 'ადმინისგან' : 'სტუმრისგან'} ID=${message.psid}${message.meta?.guestName ? ` (${message.meta.guestName})` : ''}`);
     
     return message;
   } catch (error) {

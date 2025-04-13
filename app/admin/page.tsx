@@ -27,6 +27,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stats, setStats] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   
@@ -49,7 +50,20 @@ export default function AdminPage() {
       }
     }
     
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/admin/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    }
+    
     fetchUsers();
+    fetchStats();
     
     // პერიოდული განახლება
     const intervalId = setInterval(fetchUsers, 30000); // ყოველ 30 წამში
@@ -165,6 +179,32 @@ export default function AdminPage() {
   return (
     <div className={styles.container}>
       <h1>ადმინისტრატორის პანელი</h1>
+      
+      {/* Display environment info and stats */}
+      {stats && (
+        <div className={styles.statsPanel}>
+          <h3>System Info</h3>
+          <p>Environment: <strong>{stats.environment}</strong></p>
+          <div className={styles.statGrid}>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{stats.stats.users}</span>
+              <span className={styles.statLabel}>Total Users</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{stats.stats.messages}</span>
+              <span className={styles.statLabel}>Total Messages</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{stats.stats.guests}</span>
+              <span className={styles.statLabel}>Guest Users</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statValue}>{stats.stats.adminMessages}</span>
+              <span className={styles.statLabel}>Admin Messages</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className={styles.dashboard}>
         <div className={styles.usersPanel}>
