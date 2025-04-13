@@ -12,6 +12,8 @@ export async function POST(request: Request) {
       );
     }
     
+    console.log(`Admin sending message to ${recipientId}: ${message}`);
+    
     const user = await getUserByPSID(recipientId);
     
     if (!user) {
@@ -37,7 +39,6 @@ export async function POST(request: Request) {
     // თუ მომხმარებელი Facebook-იდან არის და არა სტუმარი, 
     // Facebook API-ს გამოყენებით გავაგზავნოთ
     if (!user.isGuest && process.env.NODE_ENV === 'production') {
-      // პროდაქშენ გარემოში გამოვიყენებთ Facebook API-ს
       try {
         const pageAccessToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN;
         

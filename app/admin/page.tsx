@@ -190,7 +190,10 @@ export default function AdminPage() {
               <tbody>
                 {Object.values(users).map((user) => (
                   <tr key={user.psid} className={getUserClassName(user)}>
-                    <td className={styles.userId}>{user.psid}</td>
+                    <td className={styles.userId}>
+                      {user.name ? user.name : user.psid}
+                      {user.name && <span className={styles.userIdSecondary}>{user.psid}</span>}
+                    </td>
                     <td>{user.isGuest ? 'სტუმარი' : 'Facebook'}</td>
                     <td>{new Date(user.lastActive).toLocaleString()}</td>
                     <td>
@@ -213,7 +216,8 @@ export default function AdminPage() {
             <div className={styles.chatHeader}>
               <div>
                 <span className={styles.chatTitle}>
-                  {users[selectedUser]?.isGuest ? 'სტუმარი' : 'Facebook მომხმარებელი'}
+                  {users[selectedUser]?.name || 
+                   (users[selectedUser]?.isGuest ? 'სტუმარი' : 'Facebook მომხმარებელი')}
                 </span>
                 <span className={styles.chatSubtitle}>{selectedUser}</span>
               </div>

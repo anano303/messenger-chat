@@ -67,6 +67,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+}
+
+.userIdSecondary {
+  font-size: 11px;
+  color: #777;
+  margin-top: 2px;
 }
 
 .guestUser {

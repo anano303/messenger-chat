@@ -1,59 +1,35 @@
 import { NextResponse } from 'next/server';
 import { getNewMessagesByPSID } from '../../../../../lib/messenger-db';
 
-// Track what messages have been sent to each client
-const sentMessages = new Map<string, Set<string>>();
-
 export async function GET(request: Request) {
   try {
-    // Extract path and query parameters
+    // პარამეტრების ამოღება
     const url = new URL(request.url);
     const pathParts = url.pathname.split('/');
     const sessionId = pathParts[pathParts.length - 1];
     const lastTimestamp = Number(url.searchParams.get('lastTimestamp')) || 0;
     
-    // Form the guest ID
+    // სტუმრის ID ფორმირება
     const guestId = `guest_${sessionId}`;
     
-    // Get new messages since the last timestamp
-    const newMessages = await getNewMessagesByPSID(guestId, lastTimestamp);
+    // დებაგ ინფორმაცია
+    console.log(`Fetching messages for ${guestId} since ${new Date(lastTimestamp).toLocaleString()}`);
     
-    // Create or get tracking set for this user
-    if (!sentMessages.has(guestId)) {
-      sentMessages.set(guestId, new Set());
-    }
-    const userSentMessages = sentMessages.get(guestId)!;
+    // ახალი მესიჯების მოძიება
+    const allMessages = await getNewMessagesByPSID(guestId, lastTimestamp);
     
-    // Filter out any messages we've already sent to this client
-    const uniqueMessages = newMessages.filter(msg => !userSentMessages.has(msg.id));
+    // დებაგ ინფორმაცია, რამდენი მესიჯი მოიძებნა
+    console.log(`Found ${allMessages.length} messages since ${new Date(lastTimestamp).toLocaleString()}`);
     
-    // Mark these messages as sent
-    uniqueMessages.forEach(msg => userSentMessages.add(msg.id));
-    
-    // Clean up message tracking (keep only last 100 per user)
-    if (userSentMessages.size > 100) {
-      const allMessages = Array.from(userSentMessages);
-      const toRemove = allMessages.slice(0, allMessages.length - 100);
-      toRemove.forEach(id => userSentMessages.delete(id));
-    }
-    
-    // Clean up users we haven't seen in a while
-    const now = Date.now();
-    const CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 minutes
-    
-    if (Math.random() < 0.01) { // 1% chance of running cleanup
-      for (const [key, value] of sentMessages.entries()) {
-        const lastSeen = parseInt(key.split('_')[1] || '0');
-        if (now - lastSeen > CLEANUP_INTERVAL) {
-          sentMessages.delete(key);
-        }
-      }
-    }
+    // თავიდან ავიცილოთ დუბლიკატები
+    const uniqueMessages = Array.from(
+      new Map(allMessages.map(msg => [msg.id, msg])).values()
+    );
     
     return NextResponse.json({
       success: true,
       messages: uniqueMessages,
-      timestamp: now
+      timestamp: Date.now()
     });
   } catch (error) {
     console.error('Error fetching guest messages:', error);

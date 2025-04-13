@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createGuestUser, saveMessage, getRecentUserMessages } from '../../../lib/messenger-db';
 
-// Keep track of processed message IDs
+// შევინახოთ დამუშავებული შეტყობინებების ID-ები
 const processedMessages = new Set<string>();
 
 export async function POST(request: Request) {
   try {
-    const { recipientId, message, userId, clientMessageId } = await request.json();
+    const { recipientId, message, userId, guestName = 'Guest', clientMessageId } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -15,9 +15,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if we've already processed this exact message from the client
+    // შევამოწმოთ არის თუ არა კლიენტის ID უკვე დამუშავებული
     if (clientMessageId && processedMessages.has(clientMessageId)) {
-      console.log(`Duplicate message rejected: ${clientMessageId}`);
+      console.log(`დუბლიკატი შეტყობინება (${clientMessageId}): ${message}`);
       return NextResponse.json({
         success: true,
         isDuplicate: true,
@@ -25,36 +25,36 @@ export async function POST(request: Request) {
       });
     }
 
-    // Store client message ID to prevent duplicates
+    // დავამატოთ კლიენტის ID დამუშავებულ სიაში
     if (clientMessageId) {
       processedMessages.add(clientMessageId);
       
-      // Clean up old message IDs (keep only last 1000)
+      // გავასუფთავოთ ძველი ID-ები (შევინარჩუნოთ მხოლოდ ბოლო 1000)
       if (processedMessages.size > 1000) {
         const toRemove = Array.from(processedMessages).slice(0, 100);
         toRemove.forEach(id => processedMessages.delete(id));
       }
     }
 
-    // მომხმარებლის ID განსაზღვრა (სტუმარი თუ Facebook მომხმარებელი)
+    // მომხმარებლის ტიპის განსაზღვრა
     let userPsid = userId;
-    let isGuest = userId?.startsWith('user_') || !userId;
+    const isGuest = true; // ყოველთვის მივიჩნიოთ სტუმრად, თუ ეს API გამოიყენება
     
-    // თუ სტუმარია, შევქმნათ/მოვძებნოთ მისი ID
-    if (isGuest) {
-      const guestId = userId || `guest_${Math.random().toString(36).substring(2, 10)}`;
-      userPsid = await createGuestUser(guestId.replace('user_', ''));
-    }
+    // შევქმნათ სტუმარი მომხმარებელი
+    const guestId = userId || `guest_${Math.random().toString(36).substring(2, 10)}`;
+    userPsid = await createGuestUser(guestId.replace('user_', ''));
+    
+    console.log(`Created/retrieved guest user: ${userPsid}`);
 
-    // Check for recent duplicate messages from this user
+    // შევამოწმოთ ბოლო შეტყობინებები დუბლიკატებისთვის
     const recentMessages = await getRecentUserMessages(userPsid, 3);
     const isDuplicate = recentMessages.some(msg => 
       msg.text === message && 
-      Date.now() - msg.timestamp < 5000 // Within last 5 seconds
+      Date.now() - msg.timestamp < 5000
     );
 
     if (isDuplicate) {
-      console.log(`Duplicate message detected from ${userPsid}: "${message}"`);
+      console.log(`დუბლიკატი შეტყობინება: ${message}`);
       return NextResponse.json({
         success: true,
         isDuplicate: true,
@@ -62,16 +62,20 @@ export async function POST(request: Request) {
       });
     }
 
-    // Use client message ID if provided, otherwise generate a new one
+    // შეტყობინების ID - ან კლიენტიდან მიღებული ან ახალი
     const messageId = clientMessageId || `msg_${Date.now()}`;
 
-    // შევინახოთ შეტყობინება მონაცემთა ბაზაში
+    // შევინახოთ შეტყობინება მონაცემთა ბაზაში - დავამატოთ სტუმრის სახელი მეტა-ინფორმაციაში
     const newMessage = {
       id: messageId,
       psid: userPsid,
       text: message,
       isAdmin: false,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      meta: {
+        guestName: guestName,
+        isGuest: true
+      }
     };
     
     await saveMessage(newMessage);
