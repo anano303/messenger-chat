@@ -18,6 +18,11 @@ export async function GET() {
     // Return stats and samples
     return NextResponse.json({
       environment: process.env.NODE_ENV,
+      database: {
+        uri: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 20) + '...' : 'Not configured',
+        connected: !!process.env.MONGODB_URI,
+        dbName: 'soulartChat'
+      },
       stats: {
         users: userCount,
         guests: guestCount,
@@ -37,7 +42,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching stats:', error);
     return NextResponse.json(
-      { error: 'Failed to get stats' },
+      { error: 'Failed to get stats', message: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

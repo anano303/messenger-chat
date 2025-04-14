@@ -19,6 +19,7 @@
 .dashboard {
   display: flex;
   gap: 30px;
+  overflow-x: auto;
 }
 
 .usersPanel {
@@ -69,6 +70,12 @@
   white-space: nowrap;
   display: flex;
   flex-direction: column;
+}
+
+.userDisplayName {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
 }
 
 .userIdSecondary {
@@ -273,6 +280,36 @@
   margin-top: 4px;
 }
 
+.dbStatus {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 10px;
+  margin: 12px 0;
+  font-size: 14px;
+  align-items: center;
+}
+
+.envLabel, .dbLabel {
+  font-weight: 600;
+  color: #555;
+}
+
+.envValue {
+  color: #333;
+}
+
+.dbValue {
+  font-weight: 600;
+}
+
+.dbConnected {
+  color: #10b981;
+}
+
+.dbDisconnected {
+  color: #ef4444;
+}
+
 @media (max-width: 900px) {
   .dashboard {
     flex-direction: column;
@@ -345,5 +382,25 @@
   
   .statLabel {
     color: #aaa;
+  }
+  
+  .envLabel, .dbLabel {
+    color: #aaa;
+  }
+  
+  .envValue {
+    color: #eee;
+  }
+  
+  .userDisplayName {
+    color: #ddd;
+  }
+  
+  .dbConnected {
+    color: #34d399;
+  }
+  
+  .dbDisconnected {
+    color: #f87171;
   }
 }

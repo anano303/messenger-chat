@@ -6,7 +6,7 @@ const processedMessages = new Set<string>();
 
 export async function POST(request: Request) {
   try {
-    const { recipientId, message, userId, guestName = 'Guest', clientMessageId } = await request.json();
+    const { recipientId, message, userId, guestName, isGuest = true, clientMessageId } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -14,6 +14,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // დებაგ ლოგი - შევამოწმოთ რა სახელი გვაქვს
+    console.log(`გაგზავნა: userID=${userId}, guestName=${guestName || 'არ არის მითითებული'}`);
 
     // შევამოწმოთ არის თუ არა კლიენტის ID უკვე დამუშავებული
     if (clientMessageId && processedMessages.has(clientMessageId)) {
@@ -38,13 +41,13 @@ export async function POST(request: Request) {
 
     // მომხმარებლის ტიპის განსაზღვრა
     let userPsid = userId;
-    const isGuest = true; // ყოველთვის მივიჩნიოთ სტუმრად, თუ ეს API გამოიყენება
     
     // შევქმნათ სტუმარი მომხმარებელი
     const guestId = userId || `guest_${Math.random().toString(36).substring(2, 10)}`;
-    userPsid = await createGuestUser(guestId.replace('user_', ''));
+    const name = guestName && guestName.trim() ? guestName.trim() : 'სტუმარი';
+    userPsid = await createGuestUser(guestId.replace('user_', ''), name);
     
-    console.log(`Created/retrieved guest user: ${userPsid}`);
+    console.log(`Created/retrieved guest user: ${userPsid} with name: ${name}`);
 
     // შევამოწმოთ ბოლო შეტყობინებები დუბლიკატებისთვის
     const recentMessages = await getRecentUserMessages(userPsid, 3);
@@ -73,7 +76,7 @@ export async function POST(request: Request) {
       isAdmin: false,
       timestamp: Date.now(),
       meta: {
-        guestName: guestName,
+        guestName: name, // გამოვიყენოთ წინასწარ დამუშავებული სახელი
         isGuest: true
       }
     };

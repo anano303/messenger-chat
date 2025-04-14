@@ -27,11 +27,10 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [stats, setStats] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   
-  // ყველა მომხმარებლის ჩამოტვირთვა
+  // მომხმარებლების ჩამოტვირთვა და პოლინგის დაყენება
   useEffect(() => {
     async function fetchUsers() {
       try {
@@ -50,58 +49,16 @@ export default function AdminPage() {
       }
     }
     
-    async function fetchStats() {
-      try {
-        const response = await fetch('/api/admin/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (err) {
-        console.error("Error fetching stats:", err);
-      }
-    }
-    
+    // თავდაპირველი ჩამოტვირთვა
     fetchUsers();
-    fetchStats();
     
-    // პერიოდული განახლება
-    const intervalId = setInterval(fetchUsers, 30000); // ყოველ 30 წამში
+    // პერიოდული განახლება - უფრო ხშირი ინტერვალით (5 წამი)
+    const intervalId = setInterval(fetchUsers, 5000);
     
     return () => clearInterval(intervalId);
   }, []);
   
-  // კონკრეტული მომხმარებლის შეტყობინებების ჩამოტვირთვა
-  useEffect(() => {
-    if (selectedUser) {
-      fetchUserMessages(selectedUser);
-      
-      // პერიოდულად შეტყობინებების განახლება
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
-      
-      pollingInterval.current = setInterval(() => {
-        fetchUserMessages(selectedUser);
-      }, 5000); // ყოველ 5 წამში
-    }
-    
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-        pollingInterval.current = null;
-      }
-    };
-  }, [selectedUser]);
-  
-  // შეტყობინებებში ჩასქროლვა
-  useEffect(() => {
-    if (messagesEndRef.current && selectedUser) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [selectedUser, selectedUser ? conversations[selectedUser] : null]);
-  
-  // მომხმარებლის შეტყობინებების ჩამოტვირთვის ფუნქცია
+  // ასინქრონულად ტვირთავს კონკრეტული მომხმარებლის შეტყობინებებს
   const fetchUserMessages = async (userId: string) => {
     try {
       const response = await fetch(`/api/messenger/messages/${userId}`);
@@ -120,15 +77,39 @@ export default function AdminPage() {
     }
   };
   
+  // კონკრეტული მომხმარებლის შეტყობინებების ჩამოტვირთვა
+  useEffect(() => {
+    if (selectedUser) {
+      fetchUserMessages(selectedUser);
+      
+      // პერიოდულად შეტყობინებების განახლება
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+      
+      pollingInterval.current = setInterval(() => {
+        fetchUserMessages(selectedUser);
+      }, 3000); // ყოველ 3 წამში
+    }
+    
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+        pollingInterval.current = null;
+      }
+    };
+  }, [selectedUser]);
+  
+  // შეტყობინებებში ჩასქროლვა
+  useEffect(() => {
+    if (messagesEndRef.current && selectedUser && conversations[selectedUser]) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [selectedUser, conversations]);
+
   // მომხმარებლის არჩევა
   const handleUserSelect = (userId: string) => {
-    if (selectedUser === userId) {
-      // თუ უკვე არჩეულია, გაუქმება
-      setSelectedUser(null);
-    } else {
-      // ახალი მომხმარებლის არჩევა
-      setSelectedUser(userId);
-    }
+    setSelectedUser(userId === selectedUser ? null : userId);
   };
   
   // შეტყობინების გაგზავნა
@@ -168,43 +149,20 @@ export default function AdminPage() {
     }
   };
   
-  // მომხმარებლის ტიპის მიხედვით კლასის დამატება
-  const getUserClassName = (user: User) => {
-    let className = '';
-    if (user.isGuest) className += styles.guestUser;
-    if (selectedUser === user.psid) className += ' ' + styles.selectedUser;
-    return className;
+  // მომხმარებლის სახელის მიღება
+  const getUserDisplayName = (user: User): string => {
+    // უპირველესად გამოვიყენოთ სახელი (თუ არსებობს)
+    if (user.name && user.name !== 'Guest' && user.name !== 'სტუმარი') {
+      return user.name;
+    }
+    
+    // სხვა შემთხვევაში, ვაჩვენოთ სტატუსი და ID-ის ნაწილი
+    return user.isGuest ? `სტუმარი (${user.psid.substring(0, 8)}...)` : `Facebook (${user.psid.substring(0, 8)}...)`;
   };
 
   return (
     <div className={styles.container}>
       <h1>ადმინისტრატორის პანელი</h1>
-      
-      {/* Display environment info and stats */}
-      {stats && (
-        <div className={styles.statsPanel}>
-          <h3>System Info</h3>
-          <p>Environment: <strong>{stats.environment}</strong></p>
-          <div className={styles.statGrid}>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>{stats.stats.users}</span>
-              <span className={styles.statLabel}>Total Users</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>{stats.stats.messages}</span>
-              <span className={styles.statLabel}>Total Messages</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>{stats.stats.guests}</span>
-              <span className={styles.statLabel}>Guest Users</span>
-            </div>
-            <div className={styles.statItem}>
-              <span className={styles.statValue}>{stats.stats.adminMessages}</span>
-              <span className={styles.statLabel}>Admin Messages</span>
-            </div>
-          </div>
-        </div>
-      )}
       
       <div className={styles.dashboard}>
         <div className={styles.usersPanel}>
@@ -228,24 +186,30 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {Object.values(users).map((user) => (
-                  <tr key={user.psid} className={getUserClassName(user)}>
-                    <td className={styles.userId}>
-                      {user.name ? user.name : user.psid}
-                      {user.name && <span className={styles.userIdSecondary}>{user.psid}</span>}
-                    </td>
-                    <td>{user.isGuest ? 'სტუმარი' : 'Facebook'}</td>
-                    <td>{new Date(user.lastActive).toLocaleString()}</td>
-                    <td>
-                      <button 
-                        className={styles.chatButton}
-                        onClick={() => handleUserSelect(user.psid)}
-                      >
-                        {selectedUser === user.psid ? 'დახურვა' : 'ჩატი'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {Object.values(users)
+                  .sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime())
+                  .map((user) => (
+                    <tr 
+                      key={user.psid} 
+                      className={`${user.isGuest ? styles.guestUser : ''} ${selectedUser === user.psid ? styles.selectedUser : ''}`}
+                    >
+                      <td className={styles.userId}>
+                        <span className={styles.userDisplayName}>{getUserDisplayName(user)}</span>
+                        <span className={styles.userIdSecondary}>{user.psid}</span>
+                      </td>
+                      <td>{user.isGuest ? 'სტუმარი' : 'Facebook'}</td>
+                      <td>{new Date(user.lastActive).toLocaleString()}</td>
+                      <td>
+                        <button 
+                          className={styles.chatButton}
+                          onClick={() => handleUserSelect(user.psid)}
+                        >
+                          {selectedUser === user.psid ? 'დახურვა' : 'ჩატი'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                }
               </tbody>
             </table>
           )}
@@ -256,8 +220,9 @@ export default function AdminPage() {
             <div className={styles.chatHeader}>
               <div>
                 <span className={styles.chatTitle}>
-                  {users[selectedUser]?.name || 
-                   (users[selectedUser]?.isGuest ? 'სტუმარი' : 'Facebook მომხმარებელი')}
+                  {users[selectedUser]?.name && users[selectedUser]?.name !== 'Guest' && users[selectedUser]?.name !== 'სტუმარი' 
+                    ? users[selectedUser].name 
+                    : (users[selectedUser]?.isGuest ? 'სტუმარი' : 'Facebook მომხმარებელი')}
                 </span>
                 <span className={styles.chatSubtitle}>{selectedUser}</span>
               </div>

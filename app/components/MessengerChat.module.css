@@ -198,6 +198,18 @@
   color: white;
   align-self: flex-start;
   border-bottom-left-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+:global(.MessengerChat-module__botMessage), 
+:global(.MessengerChat-module__XR8GUW__botMessage) {
+  background-color: #0084ff;
+  color: white;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .messageStatus, .messageError {

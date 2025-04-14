@@ -6,7 +6,7 @@ A flexible, self-contained chat solution that integrates with Facebook Messenger
 
 - **Dual chat options**: Users can choose between Facebook Messenger or anonymous guest chat
 - **Admin Panel**: For managing all conversations from a single interface
-- **Persistent chat history**: Chat history is saved in the local storage until users clear it
+- **Persistent chat history**: Messages stored in MongoDB database
 - **Real-time updates**: Automatic polling for new messages
 - **Custom styling**: Easily customize the look and feel to match your brand
 - **Responsive design**: Works on desktop and mobile devices
@@ -17,6 +17,7 @@ A flexible, self-contained chat solution that integrates with Facebook Messenger
 
 1. Node.js 18.x or higher
 2. Facebook Developer Account (for Messenger integration)
+3. MongoDB database (Atlas or self-hosted)
 
 ### Installation
 
@@ -40,12 +41,25 @@ A flexible, self-contained chat solution that integrates with Facebook Messenger
      NEXT_PUBLIC_FACEBOOK_PAGE_ID=your_facebook_page_id
      MESSENGER_PAGE_ACCESS_TOKEN=your_page_access_token
      MESSENGER_VERIFY_TOKEN=your_webhook_verify_token
+     
+     # MongoDB Configuration
+     MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/databaseName
+     MONGO_USERNAME=your_mongodb_username
+     MONGO_PASSWORD=your_mongodb_password
      ```
 
 4. Start the development server:
    ```
    npm run dev
    ```
+
+### MongoDB Setup
+
+1. Create a MongoDB Atlas account or use a self-hosted MongoDB instance
+2. Create a database named `soulartChat` (or your preferred name)
+3. The application will automatically create these collections:
+   - `users`: Stores user information
+   - `messages`: Stores chat messages
 
 ### Facebook Setup
 
@@ -87,15 +101,22 @@ Access the admin panel at `/admin` to:
 
 ## How It Works
 
+### Data Storage
+
+1. **MongoDB**: All messages and user information are stored in MongoDB
+2. **Collections**:
+   - `users`: Stores user profiles, names, and metadata
+   - `messages`: Stores all chat messages with references to users
+
 ### Guest Chat Flow
 
 1. User clicks the chat button
 2. User chooses "Continue as Guest"
 3. User enters their name (or skips this step)
 4. User can now send messages and will receive admin responses
-5. Chat history is saved in the browser's local storage
-6. When the user closes the chat (X button), all history is cleared and they start fresh next time
-7. When the user minimizes the chat, history is preserved
+5. Chat messages are stored in MongoDB
+6. When the user closes the chat (X button), the session ends but history remains in the database
+7. When the user minimizes the chat, session remains active
 
 ### Facebook Messenger Flow
 
@@ -118,7 +139,8 @@ Access the admin panel at `/admin` to:
 - `/app/components/MessengerChat.tsx` - Main chat component
 - `/app/admin/page.tsx` - Admin panel interface
 - `/app/api/messenger/` - API routes for sending and receiving messages
-- `/app/lib/messenger-db.ts` - Database utilities for storing messages
+- `/app/lib/messenger-db.ts` - Database utilities for MongoDB
+- `/app/lib/mongodb.ts` - MongoDB connection utility
 
 ## Customization
 
@@ -133,13 +155,14 @@ Modify the CSS modules to customize the appearance:
 Update environment variables in `.env.local` to change:
 - Facebook application details
 - Polling intervals
-- Message retention policies
+- MongoDB connection settings
 
 ## Troubleshooting
 
-- **Messages not appearing**: Check browser console for errors and ensure API routes are accessible
+- **Messages not appearing**: Check browser console for errors and MongoDB connection
 - **Facebook integration not working**: Verify app permissions and page access token
 - **Admin panel issues**: Check server logs for database connection problems
+- **MongoDB connection errors**: Verify your MongoDB connection string and network access settings
 
 ## License
 

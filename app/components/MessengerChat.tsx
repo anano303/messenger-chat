@@ -112,10 +112,18 @@ const MessengerChat: React.FC<MessengerChatProps> = ({
 
   // Create welcome message (with name)
   const createWelcomeMessage = () => {
-    const name = guestInfo?.name || 'Guest';
+    // მნიშვნელოვანია - მივიღოთ სახელი პირდაპირ state-დან
+    const displayName = guestName || guestInfo?.name || 'სტუმარი';
+    
+    // შევქმნათ პერსონალიზებული მისალმება
+    const greeting = displayName && 
+                     displayName !== 'სტუმარი' && 
+                     displayName !== 'Guest' 
+                     ? `, ${displayName}` : '';
+    
     return {
       id: `welcome_${Date.now()}`,
-      text: `👋 Hello${name !== 'Guest' ? `, ${name}` : ''}! How can we assist you today?`,
+      text: `👋 გამარჯობა${greeting}! რით შეგვიძლია დაგეხმაროთ?`,
       isUser: false,
       isAdmin: true,
       timestamp: Date.now(),
@@ -348,29 +356,38 @@ const MessengerChat: React.FC<MessengerChatProps> = ({
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const name = guestName.trim() || 'Guest';
+    // მომხმარებლის სახელის აღება - საჭიროა trim() რომ არ დარჩეს ცარიელი სივრცეები
+    const name = guestName.trim() || 'სტუმარი';
     const tempId = `${Math.random().toString(36).substring(2, 10)}`;
     
-    // Save user info with explicit guest flag
-    saveGuestInfo({
+    // მომხმარებლის ინფორმაციის შენახვა
+    const guestInfoData = {
       name,
       userId: tempId,
-      selectedChannel: 'guest', // Make sure this is explicitly set to 'guest'
+      selectedChannel: 'guest' as const,
       lastMessageTimestamp: 0
-    });
+    };
     
+    console.log("გესტის ინფორმაციის შენახვა სახელით:", name);
+    
+    // ლოკალურად შენახვა
+    localStorage.setItem('guest_info', JSON.stringify(guestInfoData));
+    
+    // სტეიტის განახლება
+    setGuestInfo(guestInfoData);
     setUserId(tempId);
-    setShowNamePrompt(false);
-    setChatState('open');
     
-    // Welcome message
+    // მისალმების შეტყობინების შექმნა მომხმარებლის სახელით - მნიშვნელოვანია სახელის პარამეტრის გადაცემა
     const welcomeMsg = createWelcomeMessage();
+    console.log("მისალმების შეტყობინება შექმნილია:", welcomeMsg.text);
+    
     setMessages([welcomeMsg]);
     setLastTimestamp(welcomeMsg.timestamp);
     saveMessages([welcomeMsg]);
     
-    // Log to ensure we're setting guest correctly
-    console.log("Guest user created with name:", name);
+    // ეკრანის შეცვლა ჩატზე
+    setShowNamePrompt(false);
+    setChatState('open');
   };
 
   // Handle message sending
@@ -379,14 +396,14 @@ const MessengerChat: React.FC<MessengerChatProps> = ({
     
     if (!newMessage.trim() || isSubmittingRef.current || !userId) return;
     
-    // Mark as submitting
+    // გაგზავნის მდგომარეობის დაყენება
     isSubmittingRef.current = true;
     
-    // Message ID
+    // შეტყობინების ID
     const messageId = `msg_${Date.now()}`;
     messageIdsRef.current.add(messageId);
     
-    // Add message locally first
+    // შეტყობინების ლოკალურად დამატება
     const userMessage: Message = {
       id: messageId,
       text: newMessage,
@@ -395,15 +412,15 @@ const MessengerChat: React.FC<MessengerChatProps> = ({
       status: 'sending'
     };
     
-    // Clear input
+    // შეტყობინების გასუფთავება
     const messageCopy = newMessage;
     setNewMessage('');
     
-    // Add message to chat
+    // შეტყობინების ჩატში დამატება
     setMessages(prev => [...prev, userMessage]);
     
     try {
-      // Send to API with explicit guest info
+      // API-ზე გაგზავნა
       const response = await fetch('/api/messenger/send', {
         method: 'POST',
         headers: {
@@ -413,46 +430,53 @@ const MessengerChat: React.FC<MessengerChatProps> = ({
           recipientId: pageId,
           message: messageCopy,
           userId: userId,
-          guestName: guestInfo?.name || 'Guest',
-          isGuest: true, // Explicitly mark as guest
+          guestName: guestInfo?.name || 'სტუმარი',
+          isGuest: true,
           clientMessageId: messageId
         }),
       });
       
       const result = await response.json();
       
-      // Update message status
+      // შეტყობინების სტატუსის განახლება
       setMessages(prev => prev.map(msg => 
         msg.id === messageId ? {...msg, status: 'sent' as const} : msg
       ));
       
-      // Update last message timestamp
+      // დროის განახლება
       setLastTimestamp(userMessage.timestamp);
       
-      // Update guest info
-      saveGuestInfo({ lastMessageTimestamp: userMessage.timestamp });
+      // სტუმრის ინფორმაციის განახლება
+      if (guestInfo) {
+        const updatedInfo = {
+          ...guestInfo,
+          lastMessageTimestamp: userMessage.timestamp
+        };
+        localStorage.setItem('guest_info', JSON.stringify(updatedInfo));
+        setGuestInfo(updatedInfo);
+      }
       
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('შეტყობინების გაგზავნის შეცდომა:', error);
       
-      // Update message status - error
+      // შეტყობინების სტატუსის განახლება - შეცდომა
       setMessages(prev => prev.map(msg => 
         msg.id === messageId ? {...msg, status: 'error' as const} : msg
       ));
       
-      // Add error message
+      // შეცდომის შეტყობინების დამატება
       const errorId = `error_${Date.now()}`;
       messageIdsRef.current.add(errorId);
       
       setMessages(prev => [...prev, {
         id: errorId,
-        text: "Message could not be sent. Please try again later.",
+        text: "შეტყობინების გაგზავნა ვერ მოხერხდა. გთხოვთ სცადოთ მოგვიანებით.",
         isUser: false,
         isAdmin: true,
         timestamp: Date.now()
       }]);
     } finally {
-      // Clear submitting status
+      // გაგზავნის მდგომარეობის გასუფთავება
       isSubmittingRef.current = false;
     }
   };
@@ -497,33 +521,33 @@ const MessengerChat: React.FC<MessengerChatProps> = ({
   const renderNamePrompt = () => (
     <div className={styles.chatContainer}>
       <div className={styles.chatHeader}>
-        <div className={styles.chatTitle}>Welcome!</div>
+        <div className={styles.chatTitle}>მოგესალმებით!</div>
         <button className={styles.closeBtn} onClick={() => setChatState('closed')}>&times;</button>
       </div>
       
       <form onSubmit={handleNameSubmit} className={styles.namePromptForm}>
-        <h3>What should we call you?</h3>
-        <p>Enter your name to make communication more personal</p>
+        <h3>როგორ მოგმართოთ?</h3>
+        <p>შეიყვანეთ თქვენი სახელი კომუნიკაციის გასაუმჯობესებლად</p>
         
         <input
           type="text"
           value={guestName}
           onChange={(e) => setGuestName(e.target.value)}
-          placeholder="Your name"
+          placeholder="თქვენი სახელი"
           className={styles.nameInput}
           autoFocus
         />
         
         <div className={styles.namePromptActions}>
           <button type="button" onClick={() => {
-            setGuestName('Guest');
+            setGuestName('სტუმარი');
             handleNameSubmit(new Event('submit') as any);
           }} className={styles.skipButton}>
-            Skip
+            გამოტოვება
           </button>
           
           <button type="submit" className={styles.continueButton}>
-            Continue
+            გაგრძელება
           </button>
         </div>
       </form>
