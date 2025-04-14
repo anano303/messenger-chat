@@ -124,7 +124,7 @@
   animation: slideUp 0.3s ease;
 }
 
-@media (max-width: 480px) {
+/* @media (max-width: 480px) {
   .chatContainer {
     width: 100vw;
     height: 100vh;
@@ -135,7 +135,7 @@
     right: 0;
     bottom: 0;
   }
-}
+} */
 
 @keyframes slideUp {
   from {
