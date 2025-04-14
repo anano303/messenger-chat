@@ -82,6 +82,7 @@
   visibility: visible;
 }
 
+/* Chat Widget */
 .chatWidget {
   position: fixed;
   bottom: 20px;
@@ -90,43 +91,68 @@
   font-family: var(--font-geist-sans, Arial, sans-serif);
 }
 
+/* Chat Button */
 .chatButton {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
+  border-radius: 30px;
   background-color: #0084ff;
   color: white;
   border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease;
+  transition: transform 0.3s ease;
 }
 
 .chatButton:hover {
-  background-color: #0077e6;
+  transform: scale(1.05);
 }
 
+/* Main Chat Container */
 .chatContainer {
-  position: absolute;
-  bottom: 80px;
-  right: 0;
-  width: 360px;
-  height: 550px;
+  width: 350px;
+  height: 500px;
   background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: slideUp 0.3s ease;
 }
 
+@media (max-width: 480px) {
+  .chatContainer {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Chat Header */
 .chatHeader {
-  padding: 16px;
   background-color: #0084ff;
   color: white;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -134,12 +160,7 @@
 
 .chatTitle {
   font-weight: 600;
-  font-size: 17px;
-}
-
-.headerControls {
-  display: flex;
-  gap: 8px;
+  font-size: 16px;
 }
 
 .closeBtn, .minimizeBtn {
@@ -148,117 +169,86 @@
   color: white;
   font-size: 20px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  transition: background-color 0.2s;
-}
-
-.closeBtn:hover, .minimizeBtn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  margin-left: 10px;
 }
 
 .minimizeBtn {
   font-size: 16px;
   line-height: 1;
-  padding-bottom: 4px;
 }
 
+.headerControls {
+  display: flex;
+  align-items: center;
+}
+
+/* Messages Container */
 .messagesContainer {
   flex: 1;
-  padding: 16px;
+  padding: 15px;
   overflow-y: auto;
   background-color: #f0f2f5;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
+/* Individual Messages */
 .message {
   max-width: 80%;
-  padding: 10px 14px;
+  padding: 10px 15px;
   border-radius: 18px;
-  font-size: 14px;
   position: relative;
   word-break: break-word;
 }
 
 .userMessage {
+  align-self: flex-end;
   background-color: #e4e6eb;
   color: #050505;
-  align-self: flex-end;
   border-bottom-right-radius: 4px;
 }
 
 .botMessage {
+  align-self: flex-start;
   background-color: #0084ff;
   color: white;
-  align-self: flex-start;
   border-bottom-left-radius: 4px;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
-:global(.MessengerChat-module__botMessage), 
-:global(.MessengerChat-module__XR8GUW__botMessage) {
-  background-color: #0084ff;
-  color: white;
-  align-self: flex-start;
-  border-bottom-left-radius: 4px;
-  white-space: pre-wrap;
-  word-break: break-word;
+/* These are normal CSS classes in the module - not global selectors */
+.userMessage.error {
+  border: 1px solid #ff4a4a;
 }
 
-.messageStatus, .messageError {
-  display: block;
+.messageStatus {
   font-size: 10px;
+  color: #777;
   margin-top: 4px;
-  opacity: 0.7;
+  text-align: right;
 }
 
 .messageError {
-  color: #ff3b30;
-  opacity: 1;
+  font-size: 10px;
+  color: #ff4a4a;
+  margin-top: 4px;
+  text-align: right;
 }
 
-.chatControls {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 16px;
-  gap: 10px;
-}
-
-.clearButton, .switchChannelButton {
-  background: none;
-  border: none;
-  color: #0084ff;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 6px 0;
-}
-
-.clearButton:hover, .switchChannelButton:hover {
-  text-decoration: underline;
-}
-
+/* Input Container */
 .inputContainer {
+  padding: 12px;
   display: flex;
-  padding: 10px 16px 16px;
-  gap: 8px;
   background-color: white;
+  border-top: 1px solid #e4e6eb;
 }
 
 .messageInput {
   flex: 1;
-  padding: 10px 14px;
-  border: 1px solid #ddd;
-  border-radius: 18px;
+  padding: 10px 15px;
+  border: 1px solid #e4e6eb;
+  border-radius: 20px;
   outline: none;
-  font-size: 14px;
-  transition: border-color 0.2s;
 }
 
 .messageInput:focus {
@@ -266,16 +256,17 @@
 }
 
 .sendButton {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   background-color: #0084ff;
   color: white;
   border: none;
+  border-radius: 50%;
+  margin-left: 10px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
 .sendButton:disabled {
@@ -283,221 +274,171 @@
   cursor: not-allowed;
 }
 
+/* Minimized Container */
 .minimizedContainer {
-  position: absolute;
-  bottom: 80px;
-  right: 0;
-  width: 200px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  background-color: #f0f2f5;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 10px 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  width: 200px;
+  animation: slideUp 0.3s ease;
 }
 
 .minimizedContent {
-  padding: 12px 16px;
   cursor: pointer;
   flex: 1;
 }
 
 .minimizedText {
-  font-size: 14px;
-  color: #0084ff;
   font-weight: 500;
+  color: #0084ff;
 }
 
 .closeMinimizedBtn {
-  width: 30px;
-  height: 30px;
   background: none;
   border: none;
-  font-size: 18px;
   color: #65676b;
   cursor: pointer;
+  font-size: 16px;
+  margin-left: 10px;
+}
+
+/* Channel Choice Container */
+.channelChoiceContainer {
+  flex: 1;
+  padding: 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-/* Channel choice screen */
-.channelChoiceContainer {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  text-align: center;
-}
-
 .channelChoiceContainer h3 {
+  margin-bottom: 20px;
   font-size: 18px;
-  font-weight: 600;
-  color: #1c1e21;
-  margin-bottom: 10px;
+  color: #050505;
+  text-align: center;
 }
 
 .channelOptions {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-top: 10px;
+  width: 100%;
+  gap: 15px;
 }
 
 .channelButton {
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #e4e6eb;
+  background-color: white;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
-  border: 1px solid #dfe1e5;
-  border-radius: 10px;
-  background-color: white;
-  cursor: pointer;
-  transition: all 0.2s;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .channelButton:hover {
-  border-color: #0084ff;
-  background-color: #f0f8ff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
 }
 
 .channelIcon {
-  font-size: 32px;
-  margin-bottom: 12px;
+  font-size: 24px;
+  margin-bottom: 5px;
 }
 
 .channelDesc {
-  font-size: 13px;
+  font-size: 14px;
   color: #65676b;
-  margin-top: 8px;
+  margin: 0;
 }
 
-/* Name prompt screen */
+/* Name Prompt Form */
 .namePromptForm {
-  padding: 24px;
-  height: 100%;
+  flex: 1;
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: center;
 }
 
 .namePromptForm h3 {
+  margin-bottom: 10px;
   font-size: 18px;
-  font-weight: 600;
-  color: #1c1e21;
+  color: #050505;
 }
 
 .namePromptForm p {
-  font-size: 14px;
+  margin-bottom: 20px;
   color: #65676b;
-  margin-bottom: 16px;
+  text-align: center;
 }
 
 .nameInput {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #dfe1e5;
+  padding: 12px 15px;
+  border: 1px solid #e4e6eb;
   border-radius: 8px;
-  font-size: 15px;
-  outline: none;
+  margin-bottom: 20px;
+  font-size: 16px;
 }
 
 .nameInput:focus {
   border-color: #0084ff;
+  outline: none;
 }
 
 .namePromptActions {
-  margin-top: auto;
   display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.skipButton, .continueButton {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .skipButton {
   background: none;
-  border: 1px solid #dfe1e5;
+  border: 1px solid #e4e6eb;
   color: #65676b;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
 }
 
 .continueButton {
   background-color: #0084ff;
   color: white;
   border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
 }
 
-.continueButton:hover {
-  background-color: #0077e6;
+/* Chat Controls */
+.chatControls {
+  padding: 8px 15px;
+  display: flex;
+  justify-content: space-between;
+  background-color: white;
+  border-top: 1px solid #e4e6eb;
 }
 
-@media (prefers-color-scheme: dark) {
-  .chatContainer {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-  }
-  
-  .messagesContainer {
-    background-color: #121212;
-  }
-  
-  .userMessage {
-    background-color: #333;
-    color: #f5f5f5;
-  }
-  
-  .namePromptForm h3 {
-    color: #f5f5f5;
-  }
-  
-  .namePromptForm p {
-    color: #b0b0b0;
-  }
-  
-  .nameInput {
-    background-color: #333;
-    border-color: #555;
-    color: #f5f5f5;
-  }
-  
-  .messageInput {
-    background-color: #333;
-    border-color: #555;
-    color: #f5f5f5;
-  }
-  
-  .channelButton {
-    background-color: #2d2d2d;
-    border-color: #555;
-  }
-  
-  .channelButton:hover {
-    background-color: #333;
-    border-color: #0084ff;
-  }
-  
-  .channelDesc {
-    color: #b0b0b0;
-  }
-  
-  .minimizedContainer {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-  }
+.clearButton, .switchChannelButton {
+  background: none;
+  border: none;
+  color: #65676b;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 10px;
 }
 
-@media (max-width: 480px) {
-  .chatContainer {
-    width: calc(100vw - 40px);
-    bottom: 70px;
-    right: 0;
-    height: 450px;
-  }
+.clearButton:hover, .switchChannelButton:hover {
+  text-decoration: underline;
 }
